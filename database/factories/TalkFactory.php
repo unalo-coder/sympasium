@@ -2,7 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\TalkType;
 use App\Models\Talk;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,7 +20,12 @@ class TalkFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'user_id' => User::factory(),
+            'title' => fake()->sentence(),
+            'type' =>  fake()->randomElement(TalkType::cases())->value,
+            'length' => rand(15, 50),
+            'abstract' => fake()->paragraph(),
+            'organizer_notes' => fake()->paragraph(),
         ];
     }
 }
