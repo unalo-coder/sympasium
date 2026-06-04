@@ -2,28 +2,35 @@
 
 namespace Database\Seeders;
 
-use App\Models\Conference;
-use App\Models\Talk;
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Container\Attributes\Tag;
+use Illuminate\Database\Eloquent\Model as Eloquent;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database.
+     * Run the database seeds.
      */
     public function run(): void
     {
-        User::factory()
-            ->has(Talk::factory()->count(5))
-            ->create([
-                'name' => 'Unalo Mtshokotsha',
-                'email' => 'unalo.mtshokotsha@addpay.africa',
-                'password' => 'password',
+        Eloquent::unguard();
+
+        if (! app()->environment('testing')) {
+            DB::statement('SET FOREIGN_KEY_CHECKS = 0');
+        }
+
+        $this->call([
+            UsersSeeder::class,
+            TalksSeeder::class,
+            BiosSeeder::class,
+            ConferencesSeeder::class,
+            SubmissionsSeeder::class,
+            AcceptanceSeeder::class,
+            RejectionSeeder::class,
         ]);
 
-        Conference::factory()->count(5)->create();
+        if (! app()->environment('testing')) {
+            DB::statement('SET FOREIGN_KEY_CHECKS = 1');
+        }
     }
 }

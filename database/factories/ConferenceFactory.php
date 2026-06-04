@@ -2,35 +2,208 @@
 
 namespace Database\Factories;
 
+use App\Casts\SpeakerPackage;
+use App\Models\Acceptance;
 use App\Models\Conference;
+use App\Models\ConferenceIssue;
+use App\Models\Rejection;
+use App\Models\Submission;
+use App\Models\TalkRevision;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends Factory<Conference>
- */
 class ConferenceFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
-        $startsAt = now()->addMonth(6);
-        $endsAt = $startsAt->clone()->addDays(3);
-        $cfpStartsAt = $startsAt->clone()->subMonth(4);
-        $cfpEndsAt = $cfpStartsAt->clone()->addMonths(2);
-
         return [
-            'title' => fake()->sentence(),
-            'location' => fake()->city() . ', ' . fake()->country(),
-            'description' => fake()->paragraph(),
-            'url' => fake()->url(),
-            'starts_at' => $startsAt,
-            'ends_at' => $endsAt,
-            'cfp_starts_at' => $cfpStartsAt,
-            'cfp_ends_at' => $cfpEndsAt,
+            'author_id' => User::factory(),
+            'title' => 'Dummy Conference',
+            'description' => $this->faker->sentence(),
+            'url' => $this->faker->url(),
+            'starts_at' => $this->faker->dateTimeBetween('+3 days', '+10 days'),
+            'ends_at' => $this->faker->dateTimeBetween('+11 days', '+20 days'),
+            'cfp_starts_at' => $this->faker->dateTimeBetween('-9 days', '-1 day'),
+            'cfp_ends_at' => $this->faker->dateTimeBetween('+1 days', '+2 days'),
+            'is_approved' => true,
         ];
+    }
+
+    public function dates($start, $end = null)
+    {
+        return $this->state([
+            'starts_at' => $start,
+            'ends_at' => $end ?? $start,
+        ]);
+    }
+
+    public function closedCFP()
+    {
+        return $this->state([
+            'cfp_starts_at' => $this->faker->dateTimeBetween('-9 days', '-4 day'),
+            'cfp_ends_at' => $this->faker->dateTimeBetween('-3 days', '-1 days'),
+        ]);
+    }
+
+    public function cfpDates($start, $end = null)
+    {
+        return $this->state([
+            'has_cfp' => true,
+            'cfp_starts_at' => $start,
+            'cfp_ends_at' => $end ?? $start,
+        ]);
+    }
+
+    public function noCfpDates()
+    {
+        return $this->state([
+            'has_cfp' => false,
+            'cfp_starts_at' => null,
+            'cfp_ends_at' => null,
+        ]);
+    }
+
+    public function approved()
+    {
+        return $this->state([
+            'is_approved' => true,
+        ]);
+    }
+
+    public function rejected()
+    {
+        return $this->state([
+            'rejected_at' => $this->faker->dateTime(),
+        ]);
+    }
+
+    public function notApproved()
+    {
+        return $this->state([
+            'is_approved' => false,
+        ]);
+    }
+
+    public function shared()
+    {
+        return $this->state([
+            'is_shared' => true,
+        ]);
+    }
+
+    public function notShared()
+    {
+        return $this->state([
+            'is_shared' => false,
+        ]);
+    }
+
+    public function featured()
+    {
+        return $this->state([
+            'is_featured' => true,
+        ]);
+    }
+
+    public function notFeatured()
+    {
+        return $this->state([
+            'is_featured' => false,
+        ]);
+    }
+
+    public function author($author)
+    {
+        return $this->for($author, 'author');
+    }
+
+    public function received(TalkRevision $revision)
+    {
+        return $this->afterCreating(function (Conference $conference) use ($revision) {
+            Submission::factory()
+                ->for($conference)
+                ->for($revision)
+                ->create();
+        });
+    }
+
+    public function acceptedTalk(TalkRevision $revision)
+    {
+        return $this->afterCreating(function (Conference $conference) use ($revision) {
+            $acceptance = Acceptance::factory()
+                ->for($conference)
+                ->for($revision)
+                ->create();
+
+            Submission::factory()
+                ->for($conference)
+                ->for($revision)
+                ->for($acceptance)
+                ->create();
+        });
+    }
+
+    public function rejectedTalk(TalkRevision $revision)
+    {
+        return $this->afterCreating(function (Conference $conference) use ($revision) {
+            $acceptance = Rejection::factory()
+                ->for($conference)
+                ->for($revision)
+                ->create();
+
+            Submission::factory()
+                ->for($conference)
+                ->for($revision)
+                ->for($acceptance)
+                ->create();
+        });
+    }
+
+    public function favoritedBy(User $user)
+    {
+        return $this->afterCreating(function (Conference $conference) use ($user) {
+            $user->favoritedConferences()->attach($conference->id);
+        });
+    }
+
+    public function dismissedBy(User $user)
+    {
+        return $this->afterCreating(function (Conference $conference) use ($user) {
+            $user->dismissedConferences()->attach($conference->id);
+        });
+    }
+
+    public function withSpeakerPackage(array $speakerPackage = [])
+    {
+        return $this->state([
+            'speaker_package' => new SpeakerPackage(array_merge([
+                'currency' => 'usd',
+                'travel' => 1000,
+                'food' => 1000,
+                'hotel' => 1000,
+            ], $speakerPackage)),
+        ]);
+    }
+
+    public function withOpenIssue()
+    {
+        return $this->afterCreating(function ($conference) {
+            ConferenceIssue::factory()
+                ->open()
+                ->create([
+                    'conference_id' => $conference->id,
+                ]);
+        });
+    }
+
+    public function withClosedIssue()
+    {
+        return $this->afterCreating(function ($conference) {
+            ConferenceIssue::factory()
+                ->closed()
+                ->create([
+                    'conference_id' => $conference->id,
+                ]);
+        });
     }
 }

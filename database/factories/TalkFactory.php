@@ -2,30 +2,78 @@
 
 namespace Database\Factories;
 
-use App\Enums\TalkType;
+use App\Models\Conference;
 use App\Models\Talk;
+use App\Models\TalkRevision;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Carbon;
 
-/**
- * @extends Factory<Talk>
- */
 class TalkFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
-            'title' => fake()->sentence(),
-            'type' =>  fake()->randomElement(TalkType::cases())->value,
-            'length' => rand(15, 50),
-            'abstract' => fake()->paragraph(),
-            'organizer_notes' => fake()->paragraph(),
+            'author_id' => User::factory(),
         ];
+    }
+
+    public function configure()
+    {
+        return $this->afterCreating(function (Talk $talk) {
+            $this->revise($talk);
+        });
+    }
+
+    public function public()
+    {
+        return $this->state([
+            'public' => true,
+        ]);
+    }
+
+    public function archived()
+    {
+        return $this->state([
+            'is_archived' => true,
+        ]);
+    }
+
+    public function author(User $user)
+    {
+        return $this->for($user, 'author');
+    }
+
+    public function submitted()
+    {
+        return $this->afterCreating(function (Talk $talk) {
+            Conference::factory()
+                ->received($talk->loadCurrentRevision()->currentRevision)
+                ->create();
+        });
+    }
+
+    public function accepted()
+    {
+        return $this->afterCreating(function (Talk $talk) {
+            Conference::factory()
+                ->acceptedTalk($talk->loadCurrentRevision()->currentRevision)
+                ->create();
+        });
+    }
+
+    public function revised(array $revisions)
+    {
+        return $this->afterCreating(function (Talk $talk) use ($revisions) {
+            $this->revise(
+                $talk,
+                array_merge(['created_at' => Carbon::now()], $revisions),
+            );
+        });
+    }
+
+    private function revise(Talk $talk, $attributes = [])
+    {
+        TalkRevision::factory()->for($talk)->create($attributes);
     }
 }
