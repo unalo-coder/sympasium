@@ -40,18 +40,18 @@
             <div class="text-lg text-indigo-800">
                 @unless ($showingRevision)
                     <a href="/talks/{{ $talk->id }}/edit" class="ml-3" title="Edit">
-                        @svg('compose', 'w-5 fill-current inline')
+                        @svg('heroicon-o-pencil', 'w-5 fill-current inline')
                     </a>
                     <a href="/talks/{{ $talk->id }}/delete" class="ml-3" title="Delete">
-                        @svg('trash', 'w-5 fill-current inline')
+                        @svg('heroicon-o-trash', 'w-5 fill-current inline')
                     </a>
                     @if ($talk->isArchived())
                         <a href="{{ route('talks.restore', ['id' => $talk->id]) }}" class="ml-3" title="Restore">
-                            @svg('folder-outline', 'w-5 fill-current inline')
+                            @svg('heroicon-o-folder-outline', 'w-5 fill-current inline')
                         </a>
                     @else
                         <a href="{{ route('talks.archive', ['id' => $talk->id]) }}" class="ml-3" title="Archive">
-                            @svg('folder', 'w-5 fill-current inline')
+                            @svg('heroicon-o-folder', 'w-5 fill-current inline')
                         </a>
                     @endif
                 @endif
@@ -84,7 +84,7 @@
                             @endif
                         </h3>
                         <a href="{{ route('submission.edit', $submission) }}" title="Edit Submission" class="text-indigo-800">
-                            @svg('compose', 'w-5 fill-current inline')
+                            @svg('heroicon-o-compose', 'w-5 fill-current inline')
                         </a>
                     </div>
                     @if ($submission->reason)

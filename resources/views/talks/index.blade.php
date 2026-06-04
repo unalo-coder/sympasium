@@ -49,7 +49,7 @@
 @section('actions')
     <x-button.primary
         :href="route('talks.create')"
-        icon="plus"
+        icon="heroicon-o-plus"
         class="block w-full"
     >
         Add Talk
